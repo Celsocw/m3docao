@@ -1,0 +1,19 @@
+# Arquivos compilados
+*.exe
+*.o
+*.obj
+*.out
+
+# Arquivos de teste
+test_input.txt
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Sistema
+.DS_Store
+Thumbs.db
+
