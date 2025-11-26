@@ -1,0 +1,31 @@
+help
+whoami
+mkdir projetos
+cd projetos
+touch codigo.c prog
+touch dados.dat bin
+touch numeros.txt num
+touch readme.txt
+ls
+echo codigo.c int main() { return 0; }
+echo numeros.txt 1234567890
+stat codigo.c
+cat codigo.c
+chmod codigo.c 755
+stat codigo.c
+cp codigo.c backup.c
+mv numeros.txt valores.txt
+ls
+su 2 2
+cat codigo.c
+echo codigo.c TENTATIVA DE ESCRITA
+su 1 1
+chmod codigo.c 700
+su 2 2
+cat codigo.c
+su 1 1
+rm backup.c
+ls
+cd ..
+ls
+exit
