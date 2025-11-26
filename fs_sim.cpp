@@ -28,9 +28,7 @@ enum FileType { DIRECTORY, TYPE_TEXT, TYPE_NUMERIC, TYPE_BINARY, TYPE_PROGRAM };
 // Contador global para gerar IDs únicos (simula inode)
 int nextInodeId = 1;
 
-// ==========================================
-// 3.4: SIMULAÇÃO DE ALOCAÇÃO DE BLOCOS
-// ==========================================
+// Req 3.4: Simula o disco físico e a alocação de blocos (indexada).
 class VirtualDisk {
 private:
     // O "Disco" é um array linear de bytes na memória
@@ -108,9 +106,7 @@ public:
     }
 };
 
-// ==========================================
-// 3.2: FILE CONTROL BLOCK (FCB / Inode)
-// ==========================================
+// Req 3.2: Representa os metadados de um arquivo ou diretório (FCB/Inode).
 struct FCB {
     int inodeId;          // ID único (Req 3.2: simula inode)
     string name;
@@ -159,7 +155,7 @@ private:
     int currentUser;  // ID do usuário atual logado
     int currentGroup; // ID do grupo atual
 
-    // Helper: Verifica permissão (Req 3.3 - owner/group/others)
+    // Req 3.3: Verifica se o usuário atual tem a permissão requerida para acessar o arquivo.
     bool checkPermission(shared_ptr<FCB> file, int requiredPerm) {
         int effectivePerm;
         
@@ -194,8 +190,7 @@ public:
         return string(buf);
     }
 
-    // --- Comandos (Req 3.1 e 3.2) ---
-
+    // Req 3.1: Cria um novo diretório.
     void mkdir(string name) {
         if (currentDir->children.count(name)) {
             cout << "Erro: Diretorio ja existe.\n";
@@ -207,6 +202,7 @@ public:
         cout << "Diretorio criado: " << name << endl;
     }
 
+    // Req 3.1: Navega para outro diretório.
     void cd(string name) {
         if (name == "..") {
             if (currentDir != root)
@@ -230,7 +226,7 @@ public:
         }
     }
 
-    // Cria arquivo com tipo especificado (Req 3.2: numérico, caractere, binário, programa)
+    // Req 3.2: Cria um arquivo vazio (ou atualiza timestamp).
     void touch(string name, FileType ftype = TYPE_TEXT) {
         if (currentDir->children.count(name)) {
             // Atualiza timestamp se já existe
@@ -262,7 +258,7 @@ public:
         }
     }
 
-    // Escrever no arquivo (Simula: echo "conteudo" > arquivo)
+    // Req 3.2: Escreve conteúdo em um arquivo.
     void echo(string name, string content) {
         if (!currentDir->children.count(name)) {
             touch(name); // Cria se não existe
@@ -300,7 +296,7 @@ public:
         }
     }
 
-    // Ler arquivo (cat)
+    // Req 3.2: Lê o conteúdo de um arquivo.
     void cat(string name) {
         if (!currentDir->children.count(name)) {
             cout << "Erro: Arquivo nao encontrado.\n";
@@ -362,7 +358,7 @@ public:
         }
     }
 
-    // chmod no formato octal: 755, 644, 777, etc. (Req 3.3)
+    // Req 3.3: Altera as permissões de um arquivo no formato octal (ex: 755).
     void chmod(string name, int octalPerm) {
         if (!currentDir->children.count(name)) {
             cout << "Erro: Arquivo nao encontrado.\n";
@@ -386,6 +382,7 @@ public:
         cout << ")\n";
     }
 
+    // Req 3.2: Remove um arquivo ou diretório.
     void rm(string name) {
         if (!currentDir->children.count(name)) {
             cout << "Erro: Nao encontrado.\n";
@@ -406,7 +403,7 @@ public:
         cout << "Removido: " << name << endl;
     }
     
-    // Renomear/Mover (mv)
+    // Req 3.2: Move ou renomeia um arquivo.
     void mv(string oldName, string newName) {
         if (!currentDir->children.count(oldName)) {
             cout << "Erro: Arquivo de origem nao encontrado.\n";
@@ -435,7 +432,7 @@ public:
         cout << "Movido/Renomeado de " << oldName << " para " << newName << endl;
     }
 
-    // Copiar (cp)
+    // Req 3.2: Copia um arquivo.
     void cp(string srcName, string destName) {
         if (!currentDir->children.count(srcName)) {
             cout << "Erro: Arquivo de origem nao encontrado.\n";
