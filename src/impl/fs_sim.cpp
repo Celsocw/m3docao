@@ -5,7 +5,7 @@
 #include "../header/disco_virtual.h"
 #include "../header/bloco_controle.h"
 #include "../header/sistema_arquivos.h"
-#include "../header/cli.h"
+#include "../header/cliente.h"
 
 using namespace std;
 
