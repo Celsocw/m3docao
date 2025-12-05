@@ -1,4 +1,4 @@
-#ifndef CLENTE_H
+#ifndef CLIENTE_H
 #define CLIENTE_H
 
 #include <cstring>
