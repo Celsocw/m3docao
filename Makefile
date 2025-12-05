@@ -3,7 +3,7 @@ CXXFLAGS = -std=c++17 -Wall -Wextra -Isrc/header
 LDFLAGS = 
 
 # Source files (moved to src/impl)
-SOURCES = src/impl/fs_sim.cpp src/impl/fcb.cpp src/impl/file_system.cpp src/impl/cli.cpp
+SOURCES = src/impl/fs_sim.cpp src/impl/fcb.cpp src/impl/file_system.cpp src/impl/cliente.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
 TARGET = fs_sim
 
