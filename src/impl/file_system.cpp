@@ -165,17 +165,19 @@ void FileSystem::echo(string nome, string conteudo) {
     }
 
     // Req 3.4: Realocação de blocos
-    // 1. Libera blocos antigos
-    disco.liberarBlocos(arquivo->indicesBlocos);
+    // 1. Tenta alocar novos blocos antes de liberar os antigos
+    vector<int> oldIndices = arquivo->indicesBlocos;
     
     try {
         // 2. Aloca novos blocos baseados no tamanho do conteúdo
-        arquivo->indicesBlocos = disco.alocarBlocos(conteudo.size());
+        vector<int> newIndices = disco.alocarBlocos(conteudo.size());
         
         // 3. Escreve no "disco"
-        disco.escreverDados(arquivo->indicesBlocos, conteudo);
+        disco.escreverDados(newIndices, conteudo);
         
-        // 4. Atualiza metadados FCB
+        // 4. Libera blocos antigos e atualiza FCB
+        disco.liberarBlocos(oldIndices);
+        arquivo->indicesBlocos = newIndices;
         arquivo->tamanho = conteudo.size();
         time(&arquivo->modificadoEm);
         cout << "Gravado com sucesso.\n";
