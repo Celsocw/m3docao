@@ -328,6 +328,11 @@ void FileSystem::cp(string nomeOrigem, string nomeDestino) {
         cout << "Erro: cp nao suporta diretorios recursivamente nesta versao.\n";
         return;
     }
+    // Verifica permissão de leitura no arquivo de origem
+    if (!verificarPermissao(arquivoOrigem, PERM_READ)) {
+        cout << "Erro: Permissao negada (Read).\n";
+        return;
+    }
 
     // Lê dados originais
     string conteudo = disco.lerDados(arquivoOrigem->indicesBlocos, arquivoOrigem->tamanho);
