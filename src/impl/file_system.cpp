@@ -73,27 +73,57 @@ void FileSystem::mkdir(string nome) {
     cout << "Diretorio criado: " << nome << endl;
 }
 
-void FileSystem::cd(string nome) {
-    if (nome == "..") {
-        if (diretorioAtual != raiz)
-            diretorioAtual = diretorioAtual->pai.lock();
-        return;
-    }
-    if (nome == "/") {
-        diretorioAtual = raiz;
-        return;
-    }
-
-    if (diretorioAtual->filhos.count(nome)) {
-        auto alvo = diretorioAtual->filhos[nome];
-        if (alvo->tipo == DIRECTORY) {
-            diretorioAtual = alvo;
+// Helper: Split string by delimiter
+vector<string> split(const string& s, char delimiter) {
+    vector<string> tokens;
+    string token;
+    for (char c : s) {
+        if (c == delimiter) {
+            if (!token.empty()) {
+                tokens.push_back(token);
+                token.clear();
+            }
         } else {
-            cout << "Erro: '" << nome << "' nao e um diretorio.\n";
+            token += c;
         }
-    } else {
-        cout << "Erro: Diretorio nao encontrado.\n";
     }
+    if (!token.empty()) {
+        tokens.push_back(token);
+    }
+    return tokens;
+}
+
+void FileSystem::cd(string nome) {
+    shared_ptr<FCB> dir;
+    if (!nome.empty() && nome[0] == '/') {
+        dir = raiz;
+    } else {
+        dir = diretorioAtual;
+    }
+    vector<string> components = split(nome, '/');
+    for (const string& comp : components) {
+        if (comp == "" || comp == ".") {
+            continue;
+        } else if (comp == "..") {
+            if (dir != raiz) {
+                dir = dir->pai.lock();
+            }
+        } else {
+            if (dir->filhos.count(comp)) {
+                auto alvo = dir->filhos[comp];
+                if (alvo->tipo == DIRECTORY) {
+                    dir = alvo;
+                } else {
+                    cout << "Erro: '" << comp << "' nao e um diretorio.\n";
+                    return;
+                }
+            } else {
+                cout << "Erro: Diretorio '" << comp << "' nao encontrado.\n";
+                return;
+            }
+        }
+    }
+    diretorioAtual = dir;
 }
 
 // Cria arquivo com tipo especificado (Req 3.2: numérico, caractere, binário, programa)
