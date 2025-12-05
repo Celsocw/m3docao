@@ -1,0 +1,70 @@
+help
+whoami
+mkdir home
+mkdir etc
+mkdir var
+cd home
+mkdir usuario1
+mkdir usuario2
+cd usuario1
+mkdir documentos
+mkdir downloads
+ls
+cd /home/usuario1/documentos
+touch arquivo.txt text
+touch numeros.dat num
+touch imagem.bin bin
+touch programa.exe prog
+ls
+echo arquivo.txt Este e um arquivo de texto
+echo numeros.dat 1234567890
+echo imagem.bin 01010101
+echo programa.exe int main() { return 0; }
+stat arquivo.txt
+stat numeros.dat
+stat programa.exe
+cat arquivo.txt
+cat numeros.dat
+chmod arquivo.txt 644
+chmod programa.exe 755
+chmod numeros.dat 600
+stat arquivo.txt
+stat programa.exe
+stat numeros.dat
+su 2 2
+whoami
+cat arquivo.txt
+echo arquivo.txt TENTATIVA ESCRITA
+cat numeros.dat
+su 1 1
+touch gruposhared.txt text
+echo gruposhared.txt Arquivo compartilhado
+chmod gruposhared.txt 670
+stat gruposhared.txt
+su 2 1
+cat gruposhared.txt
+echo gruposhared.txt Modificado pelo grupo
+su 3 3
+cat gruposhared.txt
+su 1 1
+touch pequeno.txt text
+echo pequeno.txt ABC
+stat pequeno.txt
+touch grande.txt text
+echo grande.txt AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+stat grande.txt
+cat grande.txt
+cp arquivo.txt backup.txt
+ls
+cat backup.txt
+mv backup.txt copia.txt
+ls
+rm copia.txt
+ls
+cd /
+ls
+cd home/usuario1
+ls
+cd documentos
+ls
+exit
