@@ -15,4 +15,3 @@ const int PERM_WRITE = 2;  // 010 (binary)
 const int PERM_EXEC  = 1;  // 001 (binary)
 
 #endif // CONSTANTS_H
-  
