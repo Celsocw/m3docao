@@ -80,9 +80,7 @@ public:
         for (int idx : indices) {
             int enderecoInicio = idx * BLOCK_SIZE;
             for (int i = 0; i < BLOCK_SIZE && bytesLidos < tamanhoBytes; i++) {
-                if (dados[enderecoInicio + i] != '\0') {
-                    conteudo += dados[enderecoInicio + i];
-                }
+                conteudo += dados[enderecoInicio + i];
                 bytesLidos++;
             }
         }
