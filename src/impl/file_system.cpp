@@ -301,7 +301,7 @@ void FileSystem::cp(string nomeOrigem, string nomeDestino) {
     string conteudo = disco.lerDados(arquivoOrigem->indicesBlocos, arquivoOrigem->tamanho);
 
     // Cria novo arquivo
-    touch(nomeDestino);
+    touch(nomeDestino, arquivoOrigem->tipo);
     
     // Escreve dados no novo arquivo
     echo(nomeDestino, conteudo);
