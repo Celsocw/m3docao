@@ -1,0 +1,141 @@
+# ========================================
+# TESTE COMPLETO - TODOS OS REQUISITOS
+# ========================================
+
+# === REQ 3.1: ESTRUTURA DE DIRETÓRIOS ===
+help
+whoami
+
+# Criar estrutura de diretórios em árvore
+mkdir home
+mkdir etc
+mkdir var
+cd home
+mkdir usuario1
+mkdir usuario2
+cd usuario1
+mkdir documentos
+mkdir downloads
+ls
+cd ..
+cd ..
+ls
+
+# Testar navegação
+cd home/usuario1
+cd documentos
+cd ..
+cd ..
+cd ..
+cd /
+ls
+
+# === REQ 3.2: TIPOS DE ARQUIVOS ===
+cd home/usuario1/documentos
+
+# Arquivo de TEXTO (caractere)
+touch arquivo.txt text
+echo arquivo.txt Este e um arquivo de texto com caracteres
+
+# Arquivo NUMERICO
+touch numeros.dat num
+echo numeros.dat 12345678901234567890
+
+# Arquivo BINARIO
+touch imagem.bin bin
+echo imagem.bin 01010101111100001111000010101010
+
+# Arquivo PROGRAMA (executável)
+touch programa.exe prog
+echo programa.exe int main() { printf("Hello"); return 0; }
+
+# Verificar tipos
+ls
+
+# === REQ 3.2: METADADOS FCB/INODE ===
+stat arquivo.txt
+stat numeros.dat
+stat imagem.bin
+stat programa.exe
+
+# === REQ 3.3: PERMISSÕES ===
+# Teste de chmod
+chmod arquivo.txt 644
+chmod programa.exe 755
+chmod numeros.dat 600
+stat arquivo.txt
+stat programa.exe
+
+# Teste de permissões com outro usuário
+su 2 2
+whoami
+
+# Deve conseguir ler (outros tem r)
+cat arquivo.txt
+
+# Não deve conseguir escrever (outros não tem w)
+echo arquivo.txt TENTATIVA ESCRITA
+
+# Não deve conseguir ler numeros.dat (600 = só dono)
+cat numeros.dat
+
+# Voltar ao usuário 1
+su 1 1
+
+# === REQ 3.3: PERMISSÕES DE GRUPO ===
+# Arquivo com permissão de grupo
+touch gruposhared.txt text
+echo gruposhared.txt Arquivo compartilhado com grupo
+chmod gruposhared.txt 670
+stat gruposhared.txt
+
+# Usuário 2 no mesmo grupo 1 deveria poder ler/escrever
+su 2 1
+cat gruposhared.txt
+echo gruposhared.txt Modificado pelo grupo
+
+# Usuário 3 em outro grupo não deve poder
+su 3 3
+cat gruposhared.txt
+
+su 1 1
+
+# === REQ 3.4: ALOCAÇÃO DE BLOCOS ===
+# Arquivo pequeno (cabe em 1 bloco de 64 bytes)
+touch pequeno.txt text
+echo pequeno.txt ABC
+stat pequeno.txt
+
+# Arquivo maior (precisa de múltiplos blocos)
+touch grande.txt text
+echo grande.txt AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+stat grande.txt
+
+# Verificar blocos alocados
+cat grande.txt
+
+# === OPERAÇÕES DE ARQUIVO ===
+# Copiar
+cp arquivo.txt backup.txt
+ls
+cat backup.txt
+
+# Mover/Renomear
+mv backup.txt copia_arquivo.txt
+ls
+
+# Remover
+rm copia_arquivo.txt
+ls
+
+# === NAVEGAÇÃO FINAL ===
+cd /
+ls
+cd home
+ls
+cd usuario1
+ls
+cd documentos
+ls
+
+exit

@@ -1,0 +1,21 @@
+help
+whoami
+mkdir home
+cd home
+mkdir usuario1
+cd usuario1
+touch arquivo.txt text
+echo arquivo.txt Conteudo do arquivo de texto
+stat arquivo.txt
+cat arquivo.txt
+chmod arquivo.txt 600
+stat arquivo.txt
+su 2 2
+cat arquivo.txt
+su 1 1
+rm arquivo.txt
+ls
+cd ..
+cd ..
+ls
+exit
