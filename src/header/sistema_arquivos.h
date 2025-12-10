@@ -31,6 +31,9 @@ private:
     
     // Utilitário para formatar tempo
     string tempoParaString(time_t t);
+    
+    // Helper: Remove recursivamente um FCB e seus filhos
+    void removerRecursivo(shared_ptr<FCB> alvo);
 
 public:
     FileSystem();
@@ -43,7 +46,7 @@ public:
     void cat(string nome);
     void ls();
     void chmod(string nome, int permOctal);
-    void rm(string nome);
+    void rm(string nome, bool recursivo = false);
     void mv(string nomeAntigo, string nomeNovo);
     void cp(string nomeOrigem, string nomeDestino);
     void stat(string nome);

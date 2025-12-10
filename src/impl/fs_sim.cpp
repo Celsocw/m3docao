@@ -60,7 +60,12 @@ int main() {
         }
         else if (comando == "rm") {
             ss >> arg1;
-            if (!arg1.empty()) fs.rm(arg1);
+            bool recursivo = false;
+            if (arg1 == "-r" || arg1 == "-rf") {
+                recursivo = true;
+                ss >> arg1; // Pega o nome real do arquivo/diretório
+            }
+            if (!arg1.empty()) fs.rm(arg1, recursivo);
         }
         else if (comando == "mv") {
             ss >> arg1 >> arg2;

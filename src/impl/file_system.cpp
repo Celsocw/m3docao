@@ -8,8 +8,8 @@ using namespace std;
 
 // Constructor
 FileSystem::FileSystem() {
-    usuarioAtual = 1;  // Usuário inicial (simula root)
-    grupoAtual = 1; // Grupo inicial
+    usuarioAtual = 0;  // Usuário inicial é root (UID 0)
+    grupoAtual = 0;    // Grupo inicial é root (GID 0)
     // Cria diretório raiz com permissões 755 (rwxr-xr-x)
     raiz = make_shared<FCB>("/", DIRECTORY, 0, 0, 7, 5, 5, nullptr);
     raiz->pai = raiz; // Pai do root é ele mesmo
@@ -65,6 +65,10 @@ string FileSystem::permParaStr(int p) {
 void FileSystem::mkdir(string nome) {
     if (diretorioAtual->filhos.count(nome)) {
         cout << "Erro: Diretorio ja existe.\n";
+        return;
+    }
+    if (usuarioAtual != 0 && !verificarPermissao(diretorioAtual, PERM_WRITE)) {
+        cout << "Erro: Permissao negada (Write no diretorio).\n";
         return;
     }
     // Cria novo FCB do tipo Directory com permissões 755 (rwxr-xr-x)
@@ -131,6 +135,11 @@ void FileSystem::touch(string nome, FileType tipo) {
     if (diretorioAtual->filhos.count(nome)) {
         // Atualiza timestamp se já existe
         time(&diretorioAtual->filhos[nome]->modificadoEm);
+        return;
+    }
+    // Verifica permissão de escrita no diretório atual (root ignora)
+    if (usuarioAtual != 0 && !verificarPermissao(diretorioAtual, PERM_WRITE)) {
+        cout << "Erro: Permissao negada (Write no diretorio).\n";
         return;
     }
     // Cria arquivo com permissões 644 (rw-r--r--)
@@ -247,8 +256,8 @@ void FileSystem::chmod(string nome, int permOctal) {
     }
     auto arquivo = diretorioAtual->filhos[nome];
     
-    // Apenas o dono pode mudar permissões
-    if (arquivo->idProprietario != usuarioAtual) {
+    // Apenas o dono ou root (UID 0) pode mudar permissões
+    if (usuarioAtual != 0 && arquivo->idProprietario != usuarioAtual) {
         cout << "Erro: Apenas o dono pode mudar permissoes.\n";
         return;
     }
@@ -263,20 +272,44 @@ void FileSystem::chmod(string nome, int permOctal) {
     cout << ")\n";
 }
 
-void FileSystem::rm(string nome) {
+// Helper: Remove recursivamente um FCB e seus filhos
+void FileSystem::removerRecursivo(shared_ptr<FCB> alvo) {
+    if (alvo->tipo == DIRECTORY) {
+        // Remove todos os filhos recursivamente
+        for (auto& [nome, filho] : alvo->filhos) {
+            removerRecursivo(filho);
+        }
+        alvo->filhos.clear();
+    }
+    // Libera blocos no disco
+    disco.liberarBlocos(alvo->indicesBlocos);
+}
+
+void FileSystem::rm(string nome, bool recursivo) {
     if (!diretorioAtual->filhos.count(nome)) {
         cout << "Erro: Nao encontrado.\n";
         return;
     }
     auto alvo = diretorioAtual->filhos[nome];
     
-    if (!verificarPermissao(alvo, PERM_WRITE)) {
-         cout << "Erro: Permissao negada.\n";
+    // Verifica permissão de escrita no diretório pai (root ignora)
+    if (usuarioAtual != 0 && !verificarPermissao(diretorioAtual, PERM_WRITE)) {
+         cout << "Erro: Permissao negada (Write no diretorio).\n";
          return;
     }
 
-    // Libera blocos no disco (Req 3.4)
-    disco.liberarBlocos(alvo->indicesBlocos);
+    // Se for diretório, verifica se está vazio ou se -r foi passado
+    if (alvo->tipo == DIRECTORY) {
+        if (!alvo->filhos.empty() && !recursivo) {
+            cout << "Erro: Diretorio nao esta vazio. Use 'rm -r' para remover recursivamente.\n";
+            return;
+        }
+        // Remove recursivamente se necessário
+        removerRecursivo(alvo);
+    } else {
+        // Libera blocos no disco (Req 3.4)
+        disco.liberarBlocos(alvo->indicesBlocos);
+    }
     
     // Remove da árvore
     diretorioAtual->filhos.erase(nome);
@@ -296,10 +329,9 @@ void FileSystem::mv(string nomeAntigo, string nomeNovo) {
 
     auto arquivo = diretorioAtual->filhos[nomeAntigo];
     
-    // Req 3.3: Checa permissão de escrita no diretório pai (conceitualmente)
-    // ou no próprio arquivo dependendo da regra. Vamos simplificar:
-    if (arquivo->idProprietario != usuarioAtual) {
-         cout << "Erro: Permissao negada (apenas dono pode mover).\n";
+    // Req 3.3: Checa permissão de escrita no diretório atual (root ignora)
+    if (usuarioAtual != 0 && !verificarPermissao(diretorioAtual, PERM_WRITE)) {
+         cout << "Erro: Permissao negada (Write no diretorio).\n";
          return;
     }
 
@@ -328,9 +360,14 @@ void FileSystem::cp(string nomeOrigem, string nomeDestino) {
         cout << "Erro: cp nao suporta diretorios recursivamente nesta versao.\n";
         return;
     }
-    // Verifica permissão de leitura no arquivo de origem
-    if (!verificarPermissao(arquivoOrigem, PERM_READ)) {
+    // Verifica permissão de leitura no arquivo de origem (root ignora)
+    if (usuarioAtual != 0 && !verificarPermissao(arquivoOrigem, PERM_READ)) {
         cout << "Erro: Permissao negada (Read).\n";
+        return;
+    }
+    // Verifica permissão de escrita no diretório destino (root ignora)
+    if (usuarioAtual != 0 && !verificarPermissao(diretorioAtual, PERM_WRITE)) {
+        cout << "Erro: Permissao negada (Write no diretorio).\n";
         return;
     }
 
@@ -384,7 +421,24 @@ void FileSystem::quemSou() {
 }
 
 string FileSystem::obterCaminho() {
-     // Simplificado: não reconstrói path inteiro, mostra apenas atual
-     if (diretorioAtual == raiz) return "/";
-     return ".../" + diretorioAtual->nome;
+    // Reconstrói o caminho completo subindo pela árvore até a raiz
+    if (diretorioAtual == raiz) return "/";
+    
+    vector<string> partes;
+    shared_ptr<FCB> atual = diretorioAtual;
+    
+    while (atual != raiz) {
+        partes.push_back(atual->nome);
+        auto paiPtr = atual->pai.lock();
+        if (!paiPtr || paiPtr == atual) break; // Segurança contra loop infinito
+        atual = paiPtr;
+    }
+    
+    // Monta o caminho na ordem correta (de raiz para atual)
+    string caminho = "";
+    for (int i = partes.size() - 1; i >= 0; i--) {
+        caminho += "/" + partes[i];
+    }
+    
+    return caminho.empty() ? "/" : caminho;
 }
