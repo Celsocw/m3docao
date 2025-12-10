@@ -55,7 +55,6 @@ public:
         for (int idx : indices) {
             if (idx >= 0 && idx < DISK_SIZE_BLOCKS) {
                 mapaBits[idx] = false;
-                // Opcional: Limpar dados
                 fill(dados.begin() + (idx * BLOCK_SIZE), 
                      dados.begin() + ((idx + 1) * BLOCK_SIZE), '\0');
             }
