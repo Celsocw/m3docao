@@ -1,3 +1,4 @@
+// Requisito 3.2: estrutura do File Control Block (inode simulado) com metadados
 #ifndef BLOCO_CONTROLE_H
 #define BLOCO_CONTROLE_H
 
@@ -11,6 +12,7 @@ using namespace std;
 
 enum FileType { DIRECTORY, TYPE_TEXT, TYPE_NUMERIC, TYPE_BINARY, TYPE_PROGRAM };
 
+// FCB: armazena metadados e ponteiros para filhos (diretórios) e blocos (dados)
 struct FCB {
     int inodeId;
     string nome;

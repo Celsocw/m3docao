@@ -1,3 +1,4 @@
+// Requisito 3.4: disco virtual com alocação indexada e bitmap
 #ifndef DISCO_VIRTUAL_H
 #define DISCO_VIRTUAL_H
 

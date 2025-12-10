@@ -1,3 +1,8 @@
+// Atende aos requisitos do trabalho:
+// 3.1 Árvore de diretórios (filhos/pai em FCB, navegação cd/obterCaminho)
+// 3.2 FCB com metadados completos e operações touch/echo/cat/stat
+// 3.3 Controle RWX para owner/grupo/outros em todas as operações e comando exec
+// 3.4 Alocação indexada de blocos no disco virtual (alocar/ler/escrever/liberar)
 #include "../header/sistema_arquivos.h"
 #include <iostream>
 #include <iomanip>
@@ -52,6 +57,7 @@ string FileSystem::permParaStr(int p) {
     return s;
 }
 
+// 3.1 cria diretório como nó da árvore; 3.3 exige w no diretório atual
 void FileSystem::mkdir(string nome) {
     if (diretorioAtual->filhos.count(nome)) {
         cout << "Erro: Diretorio ja existe.\n";
@@ -85,6 +91,7 @@ vector<string> split(const string& s, char delimiter) {
     return tokens;
 }
 
+// 3.1 navegação na árvore; 3.3 exige x nos diretórios atravessados
 void FileSystem::cd(string nome) {
     shared_ptr<FCB> dir;
     if (!nome.empty() && nome[0] == '/') {
@@ -127,6 +134,7 @@ void FileSystem::cd(string nome) {
     diretorioAtual = dir;
 }
 
+// 3.2 cria FCB com metadados; 3.4 aloca bloco inicial
 void FileSystem::touch(string nome, FileType tipo) {
     if (diretorioAtual->filhos.count(nome)) {
         time(&diretorioAtual->filhos[nome]->modificadoEm);
@@ -146,6 +154,7 @@ void FileSystem::touch(string nome, FileType tipo) {
     }
 }
 
+// 3.2/3.4 escreve e realoca blocos; 3.3 checa w no arquivo
 void FileSystem::echo(string nome, string conteudo) {
     if (!diretorioAtual->filhos.count(nome)) {
         touch(nome);
@@ -173,6 +182,7 @@ void FileSystem::echo(string nome, string conteudo) {
     }
 }
 
+// 3.2 lê conteúdo; 3.3 checa r; 3.4 lê blocos
 void FileSystem::cat(string nome) {
     if (!diretorioAtual->filhos.count(nome)) {
         cout << "Erro: Arquivo nao encontrado.\n";
@@ -192,6 +202,7 @@ void FileSystem::cat(string nome) {
     cout << conteudo << endl;
 }
 
+// 3.1 lista filhos do diretório; 3.3 exige r no diretório
 void FileSystem::ls() {
     if (usuarioAtual != 0 && !verificarPermissao(diretorioAtual, PERM_READ)) {
         cout << "Erro: Permissao negada (Read).\n";
@@ -219,6 +230,7 @@ void FileSystem::ls() {
     }
 }
 
+// 3.3 altera permissões no formato octal
 void FileSystem::chmod(string nome, int permOctal) {
     if (!diretorioAtual->filhos.count(nome)) {
         cout << "Erro: Arquivo nao encontrado.\n";
@@ -237,6 +249,7 @@ void FileSystem::chmod(string nome, int permOctal) {
     cout << ")\n";
 }
 
+// Utilitário para remover nó e liberar blocos (usado por rm)
 void FileSystem::removerRecursivo(shared_ptr<FCB> alvo) {
     if (alvo->tipo == DIRECTORY) {
         for (auto& [nome, filho] : alvo->filhos) {
@@ -247,6 +260,7 @@ void FileSystem::removerRecursivo(shared_ptr<FCB> alvo) {
     disco.liberarBlocos(alvo->indicesBlocos);
 }
 
+// 3.3 exige w no diretório e (para arquivo) no alvo; suporta -r
 void FileSystem::rm(string nome, bool recursivo) {
     if (!diretorioAtual->filhos.count(nome)) {
         cout << "Erro: Nao encontrado.\n";
@@ -274,6 +288,7 @@ void FileSystem::rm(string nome, bool recursivo) {
     cout << "Removido: " << nome << endl;
 }
 
+// 3.3 exige w no diretório e no arquivo para renomear/mover
 void FileSystem::mv(string nomeAntigo, string nomeNovo) {
     if (!diretorioAtual->filhos.count(nomeAntigo)) {
         cout << "Erro: Arquivo de origem nao encontrado.\n";
@@ -299,6 +314,7 @@ void FileSystem::mv(string nomeAntigo, string nomeNovo) {
     cout << "Movido/Renomeado de " << nomeAntigo << " para " << nomeNovo << endl;
 }
 
+// 3.1/3.4 cópia recursiva de árvore de diretórios preservando metadados
 void copiarDiretorioRecursivo(shared_ptr<FCB> origem, shared_ptr<FCB> destino, int usuarioAtual, int grupoAtual,
                               function<bool(shared_ptr<FCB>, int)> verificarPermissao) {
     auto novoDir = make_shared<FCB>(destino->nome, DIRECTORY, usuarioAtual, grupoAtual,
@@ -319,6 +335,7 @@ void copiarDiretorioRecursivo(shared_ptr<FCB> origem, shared_ptr<FCB> destino, i
     }
 }
 
+// 3.2/3.3/3.4 copia arquivo ou diretório (recursivo), checando r/w
 void FileSystem::cp(string nomeOrigem, string nomeDestino) {
     if (!diretorioAtual->filhos.count(nomeOrigem)) {
         cout << "Erro: Arquivo de origem nao encontrado.\n";
@@ -351,6 +368,7 @@ void FileSystem::cp(string nomeOrigem, string nomeDestino) {
     cout << "Copiado de " << nomeOrigem << " para " << nomeDestino << endl;
 }
 
+// 3.2 exibe metadados e blocos (inode simulado)
 void FileSystem::stat(string nome) {
     if (!diretorioAtual->filhos.count(nome)) {
         cout << "Erro: Arquivo nao encontrado.\n";
@@ -375,6 +393,7 @@ void FileSystem::stat(string nome) {
     cout << " Birth: " << tempoParaString(f->criadoEm) << "\n";
 }
 
+// 3.3 comando exec exige permissão x; simula execução
 void FileSystem::executar(string nome) {
     if (!diretorioAtual->filhos.count(nome)) {
         cout << "Erro: Arquivo nao encontrado.\n";

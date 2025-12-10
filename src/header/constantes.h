@@ -1,3 +1,4 @@
+// Requisito 3.3/3.4: constantes de permissões e configuração do disco
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 

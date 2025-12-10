@@ -1,3 +1,4 @@
+// Requisitos 3.1, 3.2, 3.3, 3.4: interface do sistema de arquivos e comandos
 #ifndef SISTEMA_ARQUIVOS_H
 #define SISTEMA_ARQUIVOS_H
 
