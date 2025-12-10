@@ -79,6 +79,10 @@ int main() {
             ss >> arg1;
             if (!arg1.empty()) fs.stat(arg1);
         }
+        else if (comando == "exec") {
+            ss >> arg1;
+            if (!arg1.empty()) fs.executar(arg1);
+        }
         else if (comando == "echo") {
             ss >> arg1; // arquivo
             

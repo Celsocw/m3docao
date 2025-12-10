@@ -12,7 +12,11 @@ Este projeto implementa um simulador de sistema de arquivos em memória em C++, 
 
 ### Compilação
 ```bash
-g++ -std=c++17 fs_sim.cpp -o fs_sim
+# Usando Makefile (recomendado)
+make
+
+# Ou compilação manual
+g++ -std=c++17 -Isrc/header src/impl/*.cpp -o fs_sim
 ```
 
 ### Execução
@@ -27,16 +31,17 @@ g++ -std=c++17 fs_sim.cpp -o fs_sim
 | Comando | Descrição |
 |---------|-----------|
 | `mkdir <nome>` | Cria um diretório |
-| `cd <nome\|..\|/>` | Navega entre diretórios |
-| `ls` | Lista arquivos com metadados (permissões, tipo, tamanho, UID, GID) |
+| `cd <nome\|..\|/>` | Navega entre diretórios (verifica permissão de execução) |
+| `ls` | Lista arquivos com metadados (verifica permissão de leitura) |
 | `touch <nome> [tipo]` | Cria arquivo (tipo: text/num/bin/prog) |
 | `echo <arq> <conteudo>` | Escreve conteúdo no arquivo |
 | `cat <arq>` | Lê conteúdo do arquivo |
-| `cp <orig> <dest>` | Copia arquivo |
+| `cp <orig> <dest>` | Copia arquivo ou diretório recursivamente |
 | `mv <orig> <dest>` | Move/renomeia arquivo |
 | `rm <nome>` | Remove arquivo ou diretório |
 | `chmod <arq> <perm>` | Altera permissões (ex: 755, 644) |
 | `stat <arq>` | Mostra metadados detalhados (inode, blocos) |
+| `exec <arq>` | Executa arquivo (verifica permissão de execução) |
 | `su <uid> [gid]` | Troca usuário/grupo atual |
 | `whoami` | Mostra usuário/grupo atual |
 | `help` | Mostra ajuda |
@@ -77,8 +82,9 @@ As operações básicas implementadas seguem o padrão Unix:
 
 - **Criar (touch)**: Aloca um FCB e um bloco inicial no disco virtual
 - **Escrever (echo)**: Libera blocos antigos, aloca novos baseado no tamanho, escreve dados
-- **Ler (cat)**: Verifica permissões, lê dados dos blocos referenciados, atualiza `accessedAt`
-- **Copiar (cp)**: Lê dados da origem, cria novo arquivo, escreve dados (nova alocação de blocos)
+- **Ler (cat)**: Verifica permissões de leitura, lê dados dos blocos referenciados, atualiza `accessedAt`
+- **Executar (exec)**: Verifica permissões de execução, simula execução baseada no tipo de arquivo
+- **Copiar (cp)**: Lê dados da origem, cria novo arquivo/diretório, escreve dados (nova alocação de blocos)
 - **Mover/Renomear (mv)**: Atualiza referências na árvore de diretórios (não move dados)
 - **Excluir (rm)**: Libera blocos no disco, remove entrada do diretório pai
 
@@ -133,10 +139,18 @@ bool checkPermission(shared_ptr<FCB> file, int requiredPerm) {
         effectivePerm = file->groupPerm;
     else
         effectivePerm = file->otherPerm;
-    
+
     return (effectivePerm & requiredPerm) != 0;
 }
 ```
+
+**Comandos que verificam permissões:**
+- `ls`: Verifica leitura (r) no diretório
+- `cd`: Verifica execução (x) no diretório
+- `cat`, `exec`: Verificam leitura/execução (r/x) no arquivo
+- `echo`: Verifica escrita (w) no arquivo
+- `rm`, `mv`: Verificam escrita (w) no arquivo e no diretório
+- `cp`: Verifica leitura (r) na origem e escrita (w) no destino
 
 ### 5. Simulação de Alocação de Blocos (Req 3.4)
 
@@ -167,6 +181,22 @@ vector<int> blockIndices;  // Ex: [0, 5, 12] → dados nos blocos 0, 5 e 12
 - Acesso direto a qualquer bloco
 - Sem fragmentação externa
 - Facilita expansão do arquivo
+
+---
+
+## Arquivo de Teste
+
+Para testar as correções implementadas (verificação de permissões RWX completa), execute:
+```bash
+./fs_sim < test_permissions.txt
+```
+
+Este arquivo demonstra:
+- Verificação de permissões de execução em diretórios (`cd`)
+- Verificação de permissões de leitura em diretórios (`ls`)
+- Comando `exec` com verificação de permissões
+- Verificações de permissões específicas em arquivos para `rm`, `mv`, `cp`
+- Cópia recursiva de diretórios
 
 ---
 

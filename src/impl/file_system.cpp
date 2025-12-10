@@ -110,12 +110,23 @@ void FileSystem::cd(string nome) {
             continue;
         } else if (comp == "..") {
             if (dir != raiz) {
-                dir = dir->pai.lock();
+                auto pai = dir->pai.lock();
+                // Verifica permissão de execução no diretório pai para "atravessar"
+                if (usuarioAtual != 0 && !verificarPermissao(pai, PERM_EXEC)) {
+                    cout << "Erro: Permissao negada (Execute no diretorio pai).\n";
+                    return;
+                }
+                dir = pai;
             }
         } else {
             if (dir->filhos.count(comp)) {
                 auto alvo = dir->filhos[comp];
                 if (alvo->tipo == DIRECTORY) {
+                    // Verifica permissão de execução no diretório alvo para entrar
+                    if (usuarioAtual != 0 && !verificarPermissao(alvo, PERM_EXEC)) {
+                        cout << "Erro: Permissao negada (Execute).\n";
+                        return;
+                    }
                     dir = alvo;
                 } else {
                     cout << "Erro: '" << comp << "' nao e um diretorio.\n";
@@ -223,14 +234,20 @@ void FileSystem::cat(string nome) {
 }
 
 void FileSystem::ls() {
-    cout << left << setw(12) << "PERM" 
-         << setw(10) << "TIPO" 
-         << setw(8)  << "TAM" 
+    // Verifica permissão de leitura no diretório atual (root ignora)
+    if (usuarioAtual != 0 && !verificarPermissao(diretorioAtual, PERM_READ)) {
+        cout << "Erro: Permissao negada (Read).\n";
+        return;
+    }
+
+    cout << left << setw(12) << "PERM"
+         << setw(10) << "TIPO"
+         << setw(8)  << "TAM"
          << setw(8)  << "UID"
          << setw(8)  << "GID"
-         << setw(18) << "MODIFICADO" 
+         << setw(18) << "MODIFICADO"
          << "NOME" << endl;
-    
+
     for (auto const& [chave, val] : diretorioAtual->filhos) {
         // Formato: drwxr-xr-x ou -rw-r--r--
         string strPerm = (val->tipo == DIRECTORY) ? "d" : "-";
@@ -291,11 +308,17 @@ void FileSystem::rm(string nome, bool recursivo) {
         return;
     }
     auto alvo = diretorioAtual->filhos[nome];
-    
+
     // Verifica permissão de escrita no diretório pai (root ignora)
     if (usuarioAtual != 0 && !verificarPermissao(diretorioAtual, PERM_WRITE)) {
          cout << "Erro: Permissao negada (Write no diretorio).\n";
          return;
+    }
+
+    // Para arquivos, verifica também permissão de escrita no próprio arquivo (root ignora)
+    if (alvo->tipo != DIRECTORY && usuarioAtual != 0 && !verificarPermissao(alvo, PERM_WRITE)) {
+        cout << "Erro: Permissao negada (Write no arquivo).\n";
+        return;
     }
 
     // Se for diretório, verifica se está vazio ou se -r foi passado
@@ -310,7 +333,7 @@ void FileSystem::rm(string nome, bool recursivo) {
         // Libera blocos no disco (Req 3.4)
         disco.liberarBlocos(alvo->indicesBlocos);
     }
-    
+
     // Remove da árvore
     diretorioAtual->filhos.erase(nome);
     cout << "Removido: " << nome << endl;
@@ -328,23 +351,55 @@ void FileSystem::mv(string nomeAntigo, string nomeNovo) {
     }
 
     auto arquivo = diretorioAtual->filhos[nomeAntigo];
-    
+
     // Req 3.3: Checa permissão de escrita no diretório atual (root ignora)
     if (usuarioAtual != 0 && !verificarPermissao(diretorioAtual, PERM_WRITE)) {
          cout << "Erro: Permissao negada (Write no diretorio).\n";
          return;
     }
 
+    // Verifica permissão de escrita no próprio arquivo (root ignora)
+    if (usuarioAtual != 0 && !verificarPermissao(arquivo, PERM_WRITE)) {
+        cout << "Erro: Permissao negada (Write no arquivo).\n";
+        return;
+    }
+
     // Renomeia (update key in map)
     arquivo->nome = nomeNovo;
     diretorioAtual->filhos[nomeNovo] = arquivo;
     diretorioAtual->filhos.erase(nomeAntigo);
-    
+
     time(&arquivo->modificadoEm);
     cout << "Movido/Renomeado de " << nomeAntigo << " para " << nomeNovo << endl;
 }
 
-// Copiar (cp)
+// Helper: Copiar diretório recursivamente
+void copiarDiretorioRecursivo(shared_ptr<FCB> origem, shared_ptr<FCB> destino, int usuarioAtual, int grupoAtual,
+                              function<bool(shared_ptr<FCB>, int)> verificarPermissao) {
+    // Cria o diretório destino
+    auto novoDir = make_shared<FCB>(destino->nome, DIRECTORY, usuarioAtual, grupoAtual,
+                                   origem->permProprietario, origem->permGrupo, origem->permOutros, destino->pai);
+    destino->pai.lock()->filhos[destino->nome] = novoDir;
+
+    // Copia todos os filhos recursivamente
+    for (auto& [nome, filho] : origem->filhos) {
+        if (filho->tipo == DIRECTORY) {
+            // Cria subdiretório e copia recursivamente
+            auto novoSubDir = make_shared<FCB>(nome, DIRECTORY, filho->idProprietario, filho->idGrupo,
+                                             filho->permProprietario, filho->permGrupo, filho->permOutros, novoDir);
+            copiarDiretorioRecursivo(filho, novoSubDir, usuarioAtual, grupoAtual, verificarPermissao);
+        } else {
+            // Copia arquivo
+            auto novoArquivo = make_shared<FCB>(nome, filho->tipo, filho->idProprietario, filho->idGrupo,
+                                              filho->permProprietario, filho->permGrupo, filho->permOutros, novoDir);
+            novoArquivo->tamanho = filho->tamanho;
+            novoArquivo->indicesBlocos = filho->indicesBlocos; // Copia referências aos blocos
+            novoDir->filhos[nome] = novoArquivo;
+        }
+    }
+}
+
+// Copiar (cp) - agora suporta cópia recursiva de diretórios
 void FileSystem::cp(string nomeOrigem, string nomeDestino) {
     if (!diretorioAtual->filhos.count(nomeOrigem)) {
         cout << "Erro: Arquivo de origem nao encontrado.\n";
@@ -356,29 +411,39 @@ void FileSystem::cp(string nomeOrigem, string nomeDestino) {
     }
 
     auto arquivoOrigem = diretorioAtual->filhos[nomeOrigem];
-    if (arquivoOrigem->tipo == DIRECTORY) {
-        cout << "Erro: cp nao suporta diretorios recursivamente nesta versao.\n";
-        return;
-    }
-    // Verifica permissão de leitura no arquivo de origem (root ignora)
+
+    // Verifica permissão de leitura no arquivo/diretório de origem (root ignora)
     if (usuarioAtual != 0 && !verificarPermissao(arquivoOrigem, PERM_READ)) {
         cout << "Erro: Permissao negada (Read).\n";
         return;
     }
+
     // Verifica permissão de escrita no diretório destino (root ignora)
     if (usuarioAtual != 0 && !verificarPermissao(diretorioAtual, PERM_WRITE)) {
         cout << "Erro: Permissao negada (Write no diretorio).\n";
         return;
     }
 
-    // Lê dados originais
-    string conteudo = disco.lerDados(arquivoOrigem->indicesBlocos, arquivoOrigem->tamanho);
+    if (arquivoOrigem->tipo == DIRECTORY) {
+        // Cópia recursiva de diretório
+        auto novoDir = make_shared<FCB>(nomeDestino, DIRECTORY, usuarioAtual, grupoAtual,
+                                       arquivoOrigem->permProprietario, arquivoOrigem->permGrupo,
+                                       arquivoOrigem->permOutros, diretorioAtual);
 
-    // Cria novo arquivo
-    touch(nomeDestino, arquivoOrigem->tipo);
-    
-    // Escreve dados no novo arquivo
-    echo(nomeDestino, conteudo);
+        copiarDiretorioRecursivo(arquivoOrigem, novoDir, usuarioAtual, grupoAtual,
+                                [this](shared_ptr<FCB> f, int p) { return verificarPermissao(f, p); });
+    } else {
+        // Cópia de arquivo regular
+        // Lê dados originais
+        string conteudo = disco.lerDados(arquivoOrigem->indicesBlocos, arquivoOrigem->tamanho);
+
+        // Cria novo arquivo
+        touch(nomeDestino, arquivoOrigem->tipo);
+
+        // Escreve dados no novo arquivo
+        echo(nomeDestino, conteudo);
+    }
+
     cout << "Copiado de " << nomeOrigem << " para " << nomeDestino << endl;
 }
 
@@ -388,7 +453,7 @@ void FileSystem::stat(string nome) {
         return;
     }
     auto f = diretorioAtual->filhos[nome];
-    
+
     // Formato similar ao comando stat do Linux
     cout << "  File: " << f->nome << "\n";
     cout << "  Size: " << f->tamanho << " bytes\n";
@@ -406,6 +471,37 @@ void FileSystem::stat(string nome) {
     cout << "Access: " << tempoParaString(f->acessadoEm) << "\n";
     cout << "Modify: " << tempoParaString(f->modificadoEm) << "\n";
     cout << " Birth: " << tempoParaString(f->criadoEm) << "\n";
+}
+
+// Novo comando: executar arquivo (Req 3.3 - testar PERM_EXEC)
+void FileSystem::executar(string nome) {
+    if (!diretorioAtual->filhos.count(nome)) {
+        cout << "Erro: Arquivo nao encontrado.\n";
+        return;
+    }
+    auto arquivo = diretorioAtual->filhos[nome];
+
+    if (arquivo->tipo == DIRECTORY) {
+        cout << "Erro: Nao pode executar um diretorio.\n";
+        return;
+    }
+
+    // Req 3.3: Verifica permissão de execução
+    if (!verificarPermissao(arquivo, PERM_EXEC)) {
+        cout << "Erro: Permissao negada (Execute).\n";
+        return;
+    }
+
+    // Simula execução baseada no tipo de arquivo
+    if (arquivo->tipo == TYPE_PROGRAM) {
+        cout << "Executando programa: " << arquivo->nome << "\n";
+        cout << "Conteudo do programa seria executado aqui...\n";
+    } else {
+        cout << "Arquivo '" << arquivo->nome << "' executado (tipo: " << tipoArquivoString(arquivo->tipo) << ")\n";
+    }
+
+    // Atualiza timestamp de acesso
+    time(&arquivo->acessadoEm);
 }
 
 // Simula troca de usuário e grupo (Req 3.3: testar owner/group/others)

@@ -50,6 +50,7 @@ public:
     void mv(string nomeAntigo, string nomeNovo);
     void cp(string nomeOrigem, string nomeDestino);
     void stat(string nome);
+    void executar(string nome);  // Novo comando para executar arquivos
     void trocarUsuario(int uid, int gid = -1);
     void quemSou();
     string obterCaminho();

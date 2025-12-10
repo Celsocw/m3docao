@@ -1,0 +1,44 @@
+# Teste das correções de permissões implementadas
+# Este arquivo contém comandos para testar as funcionalidades corrigidas
+
+# Teste básico de criação e permissões
+mkdir testdir
+cd testdir
+touch arquivo.txt
+echo arquivo.txt "Conteudo do arquivo"
+chmod arquivo.txt 600
+ls
+
+# Trocar para usuário não-root
+su 1 1
+
+# Tentar executar arquivo sem permissão
+exec arquivo.txt
+
+# Tentar ler arquivo com permissão negada
+cat arquivo.txt
+
+# Tentar listar diretório sem permissão de leitura
+cd /
+chmod testdir 000
+cd testdir
+
+# Voltar para root e testar exec
+su 0 0
+chmod arquivo.txt 755
+cd testdir
+exec arquivo.txt
+
+# Teste de cópia recursiva de diretório
+cd /
+mkdir sourcedir
+cd sourcedir
+touch file1.txt
+echo file1.txt "Arquivo 1"
+mkdir subdir
+cd subdir
+touch file2.txt
+echo file2.txt "Arquivo 2"
+cd /
+cp sourcedir destdir
+ls
