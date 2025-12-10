@@ -3,6 +3,7 @@
 #include <iostream>
 #include <iomanip>
 #include <ctime>
+#include <functional>
 
 using namespace std;
 
@@ -377,9 +378,10 @@ void FileSystem::mv(string nomeAntigo, string nomeNovo) {
 void copiarDiretorioRecursivo(shared_ptr<FCB> origem, shared_ptr<FCB> destino, int usuarioAtual, int grupoAtual,
                               function<bool(shared_ptr<FCB>, int)> verificarPermissao) {
     // Cria o diretório destino
+    auto paiDestino = destino->pai.lock();
     auto novoDir = make_shared<FCB>(destino->nome, DIRECTORY, usuarioAtual, grupoAtual,
-                                   origem->permProprietario, origem->permGrupo, origem->permOutros, destino->pai);
-    destino->pai.lock()->filhos[destino->nome] = novoDir;
+                                   origem->permProprietario, origem->permGrupo, origem->permOutros, paiDestino);
+    paiDestino->filhos[destino->nome] = novoDir;
 
     // Copia todos os filhos recursivamente
     for (auto& [nome, filho] : origem->filhos) {
