@@ -9,6 +9,42 @@
 
 using namespace std;
 
+enum FileType { DIRECTORY, TYPE_TEXT, TYPE_NUMERIC, TYPE_BINARY, TYPE_PROGRAM };
+
+struct FCB {
+    int inodeId;
+    string nome;
+    FileType tipo;
+    int tamanho;
+    int idProprietario;
+    int idGrupo;
+    int permProprietario;
+    int permGrupo;
+    int permOutros;
+    time_t criadoEm;
+    time_t modificadoEm;
+    time_t acessadoEm;
+    vector<int> indicesBlocos;
+    map<string, shared_ptr<FCB>> filhos;
+    weak_ptr<FCB> pai;
+
+    FCB(string n, FileType t, int uid, int gid, int oPerm, int gPerm, int pubPerm, shared_ptr<FCB> par);
+};
+
+extern int nextInodeId;
+
+#endif
+#ifndef BLOCO_CONTROLE_H
+#define BLOCO_CONTROLE_H
+
+#include <string>
+#include <map>
+#include <vector>
+#include <memory>
+#include <ctime>
+
+using namespace std;
+
 // ==========================================
 // FILE TYPES (Req 3.2)
 // ==========================================

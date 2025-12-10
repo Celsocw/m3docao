@@ -9,6 +9,52 @@
 
 using namespace std;
 
+class FileSystem {
+private:
+    VirtualDisk disco;
+    shared_ptr<FCB> raiz;
+    shared_ptr<FCB> diretorioAtual;
+    int usuarioAtual;
+    int grupoAtual;
+
+    bool verificarPermissao(shared_ptr<FCB> arquivo, int permRequerida);
+    string tipoArquivoString(FileType t);
+    string permParaStr(int p);
+    string tempoParaString(time_t t);
+    void removerRecursivo(shared_ptr<FCB> alvo);
+
+public:
+    FileSystem();
+
+    void mkdir(string nome);
+    void cd(string nome);
+    void touch(string nome, FileType tipo = TYPE_TEXT);
+    void echo(string nome, string conteudo);
+    void cat(string nome);
+    void ls();
+    void chmod(string nome, int permOctal);
+    void rm(string nome, bool recursivo = false);
+    void mv(string nomeAntigo, string nomeNovo);
+    void cp(string nomeOrigem, string nomeDestino);
+    void stat(string nome);
+    void executar(string nome);
+    void trocarUsuario(int uid, int gid = -1);
+    void quemSou();
+    string obterCaminho();
+};
+
+#endif
+#ifndef SISTEMA_ARQUIVOS_H
+#define SISTEMA_ARQUIVOS_H
+
+#include <memory>
+#include <string>
+#include "disco_virtual.h"
+#include "bloco_controle.h"
+#include "constantes.h"
+
+using namespace std;
+
 // ==========================================
 // SISTEMA DE ARQUIVOS (Lógica Principal)
 // ==========================================

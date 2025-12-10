@@ -1,6 +1,17 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
+const int BLOCK_SIZE = 64;
+const int DISK_SIZE_BLOCKS = 100;
+
+const int PERM_READ  = 4;
+const int PERM_WRITE = 2;
+const int PERM_EXEC  = 1;
+
+#endif
+#ifndef CONSTANTS_H
+#define CONSTANTS_H
+
 // ==========================================
 // CONSTANTES E DEFINIÇÕES (Req 3.3 e 3.4)
 // ==========================================
